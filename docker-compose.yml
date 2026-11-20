@@ -1,0 +1,95 @@
+# ============================================================
+# Superset 7.0 数据源实战栈（MaxCompute / DuckDB / DuckLake / Quack）
+#
+# 基线版本：apache/superset:7.0.0rc2（Dockerfile ARG 可切换）
+# 启动：podman compose up -d   （或 docker compose up -d）
+# 凭据：数据源凭据放 .env（参考 .env.example），本文件只含
+#       Superset 自身的示例密码（change-me 风格占位，生产务必覆盖）
+#
+# 三个高频坑已内建于本文件，改动前先读注释：
+#   1. 元数据库必须用 SUPERSET__SQLALCHEMY_DATABASE_URI 注入，
+#      旧的 DATABASE_* 变量在 5.x+ 镜像里无人消费，会静默回退 SQLite
+#   2. 官方镜像不带 pyodps / duckdb-engine，由 Dockerfile 派生镜像安装
+#      （venv 无 pip，必须用系统 pip 的 --python 参数）
+#   3. Superset 7.0 默认把 duckdb 方言列入安全黑名单，
+#      派生镜像内已打补丁解除（patch/enable_duckdb.py，仅限测试/内网环境）
+# ============================================================
+
+name: step-superset
+
+x-superset-env: &superset-env
+  PYTHONUNBUFFERED: "1"
+  # 元数据库 URI（坑 1）：变量名是 Flask 环境覆盖约定，不是 DATABASE_*
+  SUPERSET__SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://superset:${POSTGRES_PASSWORD:-superset}@superset_db:5432/superset
+  REDIS_HOST: superset_cache
+  REDIS_PORT: "6379"
+  SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY:-please-change-this-demo-secret-key-32chars}
+  SUPERSET_LOAD_EXAMPLES: "no"
+  SUPERSET_PORT: "8088"
+  SUPERSET_ENV: production
+  SUPERSET_LOG_LEVEL: info
+  MAPBOX_API_KEY: ""
+  ENABLE_PLAYWRIGHT: "false"
+  PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
+  CYPRESS_CONFIG: "false"
+  PYTHONPATH: /app/pythonpath
+  ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+  ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin-demo-2026}
+
+services:
+  superset_cache:
+    image: docker.io/library/redis:7
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+
+  superset_db:
+    image: docker.io/library/postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: superset
+      POSTGRES_USER: superset
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-superset}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  superset_init:
+    image: localhost/superset-mc:${SUPERSET_TAG:-7.0.0rc2}
+    container_name: step-superset-init
+    command: ["/app/docker/docker-init.sh"]
+    user: root
+    environment: *superset-env
+    depends_on:
+      superset_db:
+        condition: service_started
+      superset_cache:
+        condition: service_started
+    volumes:
+      - superset_home:/app/superset_home
+      - ./docker:/app/pythonpath
+
+  superset_app:
+    image: localhost/superset-mc:${SUPERSET_TAG:-7.0.0rc2}
+    container_name: step-superset-app
+    command: ["/app/docker/docker-bootstrap.sh", "app-gunicorn"]
+    user: root
+    environment: *superset-env
+    restart: unless-stopped
+    ports:
+      - "8088:8088"
+    depends_on:
+      superset_init:
+        condition: service_completed_successfully
+    volumes:
+      - superset_home:/app/superset_home
+      - ./docker:/app/pythonpath
+      - ./ducklake-demo:/data
+      # 凭据只进容器文件系统，不进镜像；验证脚本从 /app/.env 读取
+      - ./.env:/app/.env:ro
+      # 连接模板目录（scripts/create-database-connection.py 读取）
+      - ./database_conn:/app/database_conn:ro
+
+volumes:
+  superset_home:
+  db_data:
+  redis_data:

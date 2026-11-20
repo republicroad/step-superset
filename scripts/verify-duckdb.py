@@ -95,7 +95,7 @@ print("login OK")
 # 2) 创建/复用 DuckDB 连接
 #    安全配置不走 connect_args：allowed_directories 在连接创建时会被
 #    duckdb 拒绝（Cannot change/set allowed_directories before the database
-#    is started，实测），统一由 duckdb_engine_security 钩子在连接后施加
+#    is started，实测），统一由 engine_patches 钩子在连接后施加
 S3_ENABLED = (os.environ.get("DUCKDB_S3_ENABLED") or _ENV.get("DUCKDB_S3_ENABLED", "false")).lower() == "true"
 code, body = api(f"{BASE}/api/v1/database/")
 items = body["result"]
@@ -112,7 +112,7 @@ else:
     print("创建:", code, str(body)[:200])
     db_id = body["id"]
     if not S3_ENABLED:
-        print("提示：DUCKDB_SECURITY_HOOK 未开启时，此连接无闸门保护（仅限本机环境）")
+        print("提示：ENGINE_PATCHES_ENABLED 未开启时，此连接无闸门保护（仅限本机环境）")
 
 # 3) 正向查询
 

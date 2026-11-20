@@ -1,5 +1,7 @@
 # ============================================================
-# duckdb_engine 安全钩子：连接建立后按固定顺序执行三层闸门
+# engine_patches：数据库引擎层补丁集合（启动时由 superset_config 接线）
+#
+# 补丁 1：duckdb_engine 安全钩子——连接建立后按固定顺序执行三层闸门
 #
 # 背景（docs/duckdb.md 第 4/6 节）：三层闸门（白名单 → 关总闸 → 上锁）
 # 全部是实例级 SET，且顺序敏感、基本单向；allowed_directories/allowed_paths
@@ -111,3 +113,24 @@ def apply(env: dict) -> None:
 
     duckdb_engine.Dialect.connect = secure_connect
     log.info("duckdb_engine Dialect.connect patched (security hook active)")
+
+    _patch_pyodps_fake_schema()
+
+
+def _patch_pyodps_fake_schema() -> None:
+    """pyodps 方言向 SQL Lab 上报假 schema 'default'，保存数据集时残留为
+    schema='default'，MaxCompute 生成 SQL 带前缀报 Table not found
+    （实测：'default'.ods_table cannot be resolved）。让 get_schema_names
+    返回空列表，SQL Lab schema 选择器为空，保存的数据集 schema=None，
+    生成无前缀 SQL——MaxCompute 默认 project 语义下正确可用。"""
+    try:
+        from odps.sqlalchemy_odps import ODPSDialect
+    except ImportError:
+        log.info("pyodps not installed; odps schema patch skipped")
+        return
+
+    def get_schema_names(self, connection, **kw):
+        return []
+
+    ODPSDialect.get_schema_names = get_schema_names
+    log.info("pyodps ODPSDialect.get_schema_names patched: suppress fake 'default' schema")

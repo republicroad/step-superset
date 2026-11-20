@@ -6,6 +6,13 @@ BABEL_DEFAULT_LOCALE = "zh"
 # Celery beat / Alerts & Reports 的 cron 调度时区（须与容器 TZ 一致）
 CELERY_TIMEZONE = "Asia/Shanghai"
 
+# SQL/数据集层 Jinja 模板渲染（filter_values 等宏）——MaxCompute 分区表
+# 「默认最新分区 + 筛选器可覆盖 ds」模式的前提。
+# 注意：必须写进 FEATURE_FLAGS 字典。官方 config.py 的 FEATURE_FLAGS 在
+# import 时即固化各 flag 值，单独写顶层 ENABLE_TEMPLATE_PROCESSING=True
+# 只改顶层键、不影响字典，实际判定仍为关闭（实测踩坑）
+FEATURE_FLAGS = {"ENABLE_TEMPLATE_PROCESSING": True}
+
 LANGUAGES = {
     "en": {"flag": "us", "name": "English"},
     "zh": {"flag": "cn", "name": "简体中文"},
@@ -34,9 +41,11 @@ for _p in ("/app/.env", _os.path.join(_os.getcwd(), ".env")):
                     _env_local[_k.strip()] = _v.strip()
         break
 
-_hook_on = _env_local.get("DUCKDB_SECURITY_HOOK", "true").lower() == "true" \
+# 引擎补丁总开关（原 DUCKDB_SECURITY_HOOK 改名，旧键名保留兼容读取）
+_patches_on = _env_local.get("ENGINE_PATCHES_ENABLED",
+                             _env_local.get("DUCKDB_SECURITY_HOOK", "true")).lower() == "true" \
     or _env_local.get("DUCKDB_S3_ENABLED", "false").lower() == "true"
-if _hook_on:
-    import duckdb_engine_security  # noqa: E402  与本文件同在 /app/pythonpath
+if _patches_on:
+    import engine_patches  # noqa: E402  与本文件同在 /app/pythonpath
 
-    duckdb_engine_security.apply(_env_local)
+    engine_patches.apply(_env_local)

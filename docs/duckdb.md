@@ -60,7 +60,7 @@ Superset 的 `analytics_db_safety` 模块默认拦截 duckdb / sqlite / shillela
 
 ### 4.1 最终生效的完整配置序列（本仓库实际执行，学习白名单设置看这里）
 
-每个连接建立后，安全钩子（`docker/duckdb_engine_security.py`）按以下顺序逐条执行
+每个连接建立后，安全钩子（`docker/engine_patches.py`）按以下顺序逐条执行
 （凭据来自挂载的 `/app/.env`，AK/Secret 以占位符表示）：
 
 ```sql
@@ -103,14 +103,15 @@ SET lock_configuration = true;                            -- 上锁：之后任�
    （`Cannot change/set allowed_directories before the database is started`）——
    只能在实例启动后逐条 `SET`。这直接否决了「connect_args 预置闸门」方案，
    duckdb-engine 又没有 post-connect 初始化钩子，所以本仓库用
-   `docker/duckdb_engine_security.py` monkeypatch 方言的 `connect()` 补执行时机
+   `docker/engine_patches.py` monkeypatch 方言的 `connect()` 补执行时机
 
 ### 4.3 机制与实现
 
 设置全部为**实例级**：`SET` 只影响当前实例，重连即重置，闸门必须每次连接重建。
-执行者是 `docker/duckdb_engine_security.py`（monkeypatch `Dialect.connect`，每连接
-自动重放 4.1 序列），由 `.env` 的 `DUCKDB_SECURITY_HOOK=true`（默认）或
-`DUCKDB_S3_ENABLED=true` 在 `docker/superset_config.py` 中激活；profile 由 `.env`
+执行者是 `docker/engine_patches.py`（monkeypatch `Dialect.connect`，每连接
+自动重放 4.1 序列），由 `.env` 的 `ENGINE_PATCHES_ENABLED=true`（默认，旧名
+`DUCKDB_SECURITY_HOOK` 兼容）或 `DUCKDB_S3_ENABLED=true` 在 `docker/superset_config.py`
+中激活；profile 由 `.env`
 内容自动决定：配置了 `DUCKDB_S3_*` 走 4.1 完整序列，仅 `DUCKDB_ALLOWED_DIRECTORIES`
 则跳过 httpfs/secret/CA 相关语句（本地白名单 profile）。
 
@@ -155,7 +156,7 @@ extension_directories` 先行，无需 INSTALL 联网下载），secret 名为 `
 duckdb-engine 没有 post-connect 初始化钩子，直接塞 connect_args 会因「关闸后 LOAD 被拦」失败。
 仓库内已内置 S3 配方的完整实现，三件套：
 
-1. `docker/duckdb_engine_security.py`——monkeypatch duckdb_engine 的 `Dialect.connect`，
+1. `docker/engine_patches.py`——monkeypatch duckdb_engine 的 `Dialect.connect`，
    每个连接建立后按上述顺序逐条执行（失败即抛出，宁可连接失败也不静默放开）
 2. `docker/superset_config.py`——读 `/app/.env`，仅当 `DUCKDB_S3_ENABLED=true` 时
    激活钩子（不启用时行为与官方镜像完全一致）

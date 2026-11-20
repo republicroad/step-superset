@@ -1,7 +1,10 @@
-# Superset 全局配置：默认简体中文
+# Superset 全局配置：默认简体中文 + 东八区
 # 官方约定：PYTHONPATH 里的 superset_config.py 会被 superset/config.py 自动导入，
 # compose 已把 ./docker 目录挂载到 /app/pythonpath
 BABEL_DEFAULT_LOCALE = "zh"
+
+# Celery beat / Alerts & Reports 的 cron 调度时区（须与容器 TZ 一致）
+CELERY_TIMEZONE = "Asia/Shanghai"
 
 LANGUAGES = {
     "en": {"flag": "us", "name": "English"},

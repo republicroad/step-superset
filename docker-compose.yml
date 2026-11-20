@@ -18,6 +18,7 @@
 name: step-superset
 
 x-superset-env: &superset-env
+  TZ: Asia/Shanghai
   PYTHONUNBUFFERED: "1"
   # 元数据库 URI（坑 1）：变量名是 Flask 环境覆盖约定，不是 DATABASE_*
   SUPERSET__SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://superset:${POSTGRES_PASSWORD:-superset}@superset_db:5432/superset
@@ -47,6 +48,7 @@ services:
     image: docker.io/library/postgres:16
     restart: unless-stopped
     environment:
+      TZ: Asia/Shanghai
       POSTGRES_DB: superset
       POSTGRES_USER: superset
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-superset}

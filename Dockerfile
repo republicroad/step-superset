@@ -2,13 +2,13 @@
 # Superset 派生镜像：官方镜像 + pyodps（MaxCompute）+ duckdb-engine（DuckDB）
 #
 # 版本切换：compose 传参或在 .env.local 设 SUPERSET_TAG
-#   --build-arg SUPERSET_TAG=7.0.0rc2     当前实测基线
+#   --build-arg SUPERSET_TAG=7.0.0rc3     当前基线（rc3）
 #   --build-arg SUPERSET_TAG=7.0.0        7.0 正式版发布后
 #
 # 构建：podman build --http-proxy=false -t localhost/superset-mc:7.0.0rc2 .
 # ============================================================
 
-ARG SUPERSET_TAG=7.0.0rc2
+ARG SUPERSET_TAG=7.0.0rc3
 FROM apache/superset:${SUPERSET_TAG}
 
 # 构建段切 root：镜像默认 USER superset，无权写 /app/.venv 的 site-packages

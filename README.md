@@ -6,7 +6,7 @@
 一套可复现的 compose 部署、派生镜像、三层闸门安全配置与端到端验收脚本：
 四条实测打通的数据源链路，外加标准数据库的模板化接入。
 
-![Superset](https://img.shields.io/badge/Superset-7.0.0rc2-20A6C5?logo=apache)
+![Superset](https://img.shields.io/badge/Superset-7.0.0rc3-20A6C5?logo=apache)
 ![DuckDB](https://img.shields.io/badge/DuckDB-2.0.0-FFF100?logo=duckdb)
 ![pyodps](https://img.shields.io/badge/pyodps-0.13.3-orange)
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python)
@@ -32,20 +32,20 @@
 cp .env.example .env        # 填入 MaxCompute AK 等数据源凭据（永不提交）
 
 # 1) 拉取官方镜像（国内镜像源三级回退）
-./scripts/pull-image.sh 7.0.0rc2
+./scripts/pull-image.sh 7.0.0rc3
 
 # 2) 构建派生镜像（官方镜像 + pyodps + duckdb-engine + 方言补丁）
-podman build --http-proxy=false -t localhost/superset-mc:7.0.0rc2 .
+podman build --http-proxy=false -t localhost/superset-mc:7.0.0rc3 .
 
 # 3) 启动全栈（init 自动跑迁移 + 建 admin 账号；.env 自动读取）
 podman compose up -d                    # 或 docker compose up -d
 
 # 4) 重建 DuckDB 演示数据（main.duckdb + parquet + DuckLake catalog）
-podman exec -i step-superset-app python - < scripts/prepare-ducklake-demo.py
+podman exec -i step-superset-app python - < scripts/demo/prepare-ducklake-demo.py
 
 # 5) 验证
-podman exec -i step-superset-app python - < scripts/verify-duckdb.py
-podman exec -i step-superset-app python - < scripts/verify-maxcompute.py
+podman exec -i step-superset-app python - < scripts/verify/verify-duckdb.py
+podman exec -i step-superset-app python - < scripts/verify/verify-maxcompute.py
 ```
 
 浏览器访问 `http://127.0.0.1:8088`，账号 `admin`，密码见 compose
@@ -55,7 +55,7 @@ podman exec -i step-superset-app python - < scripts/verify-maxcompute.py
 
 ```text
                     ┌────────────────────────────────────┐
-                    │        Superset 7.0 (7.0.0rc2)     │
+                    │        Superset 7.0 (7.0.0rc3)     │
                     │  派生镜像 = 官方 + pyodps +        │
                     │      duckdb-engine + 方言补丁      │
                     └───┬──────────┬───────────┬────────┘
@@ -75,11 +75,11 @@ podman exec -i step-superset-app python - < scripts/verify-maxcompute.py
 ```text
 docker-compose.yml      全栈编排（坑注释内建）
 Dockerfile              派生镜像（ARG SUPERSET_TAG 版本可切换）
-docker/                 superset_config.py（中文/安全钩子）+ S3 安全钩子模块
+docker/                 superset_config.py（中文/Jinja 开关）+ engine_patches.py（DuckDB 闸门 + odps 方言补丁）
 patch/enable_duckdb.py  duckdb 方言黑名单补丁（仅测试/内网环境）
 .env.example            数据源凭据模板（真实凭据放 .env，永不提交）
 database_conn/          数据源连接模板（pg/mysql/duckdb/maxcompute/doris/starrocks/trino）
-scripts/                拉镜像 / 重建演示数据 / 连接创建 / 各数据源验证脚本
+scripts/                pull-image.sh（拉镜像）；verify/（三数据源端到端验收）；setup/（连接创建与数据集固化）；demo/（DuckLake 演示数据与 Quack 客户端）
 docs/                   四数据源 + troubleshooting 详述（中文，内容自包含）
 ```
 
@@ -104,7 +104,7 @@ docs/                   四数据源 + troubleshooting 详述（中文，内容�
 
 ## ⚠️ 已知边界
 
-- 基线为 7.0.0rc2（投票期版本），正式版发布后改 Dockerfile ARG 重建即可
+- 基线为 7.0.0rc3（投票期版本），正式版发布后改 Dockerfile ARG 重建即可
 - 7.0 中文翻译覆盖不全（AI 回填未审校），设置类页面部分菜单为英文
 - Doris / StarRocks / Trino 模板的驱动未预装，使用前按
   `database_conn/README.md` 追加 pip 包并重建镜像

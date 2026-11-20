@@ -4,7 +4,7 @@
 # 前置：Superset 已启动，且已在 UI 配好 odps:// 数据源
 # 用法（仓库根目录）：
 #   1) cp .env.example .env 填入 ADMIN_PASSWORD 等
-#   2) podman exec -i step-superset-app python - < scripts/verify-maxcompute.py
+#   2) podman exec -i step-superset-app python - < scripts/verify/verify-maxcompute.py
 #
 # 验证内容：登录 → 定位 odps 数据源 → 跑 --sql 对应查询（默认 select 1）
 # 7.0 API 口径已内置：csrf_token 端点要求 JWT；/sqllab/execute/ 载荷

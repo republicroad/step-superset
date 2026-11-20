@@ -40,7 +40,7 @@ SUPERSET__SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://superset:<密码>@super
 | `client_id` | 可重复使用 | 唯一约束，重复报 UniqueViolation（500），必须每次随机 |
 | 成功响应 `data` | `{columns: [...], records: [...]}` 包装 | **直接是行对象列表** `[{...}, ...]`，列定义在响应顶层 `columns`（实测两形态都会出现，解析需兼容） |
 
-`scripts/verify-maxcompute.py` / `verify-duckdb.py` 已按 7.0 口径实现，可直接抄。
+`scripts/verify/verify-maxcompute.py` / `verify-duckdb.py` 已按 7.0 口径实现，可直接抄。
 
 ## 4. duckdb 方言黑名单补丁的边界
 

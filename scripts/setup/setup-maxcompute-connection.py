@@ -4,7 +4,7 @@
 # 凭据来源：挂载的 /app/.env（MC_AK_ID / MC_AK_SECRET / MC_PROJECT / MC_ENDPOINT）
 # 连接串参数见 docs/maxcompute.md
 # 用法（仓库根目录）：
-#   podman exec -i step-superset-app python - < scripts/setup-maxcompute-connection.py
+#   podman exec -i step-superset-app python - < scripts/setup/setup-maxcompute-connection.py
 # ============================================================
 import json
 import os

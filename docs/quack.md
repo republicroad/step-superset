@@ -34,7 +34,7 @@ CALL quack_stop('quack:localhost');
 
 CLI 捷径：`duckdb -serve` 直接起服务、`duckdb -connect 'quack:...'` 直连。
 
-## 3. 客户端三种用法（`scripts/quack_client.py`）
+## 3. 客户端三种用法（`scripts/demo/quack_client.py`）
 
 ```sql
 -- ① 无状态：单条 SQL，不建会话

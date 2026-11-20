@@ -2,10 +2,10 @@
 # 固化埋点查询：虚拟数据集 + SQL Lab 保存查询
 #
 # 前置：.env 已填 ADMIN_PASSWORD；odps/duckdb 栈已启动；
-#       DuckDB 连接已通过三层闸门验证（scripts/verify-duckdb-chain.py）
+#       DuckDB 连接已通过三层闸门验证（scripts/verify/verify-duckdb-chain.py）
 # 用法（仓库根目录）：
 #   podman exec -i -e ADMIN_PASSWORD=<密码> step-superset-app python - \
-#       < scripts/setup-track-events-dataset.py
+#       < scripts/setup/setup-track-events-dataset.py
 # ============================================================
 import json
 import os

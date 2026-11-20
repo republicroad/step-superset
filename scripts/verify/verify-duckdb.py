@@ -2,13 +2,13 @@
 # DuckDB 连接创建 + 安全配置 + 查询验证（Superset 7.0 REST API）
 #
 # 用法（仓库根目录）：
-#   podman exec -i step-superset-app python - < scripts/verify-duckdb.py
+#   podman exec -i step-superset-app python - < scripts/verify/verify-duckdb.py
 #
 # 行为：
 #   1) 登录 Superset，创建（或复用）"DuckDB (local)" 连接，
 #      创建时默认带三层闸门安全参数（docs/duckdb.md）：
 #      allowed_directories → enable_external_access=false → lock_configuration
-#   2) 正向查询：ops.demo 视图（数据来自 scripts/prepare-ducklake-demo.py）
+#   2) 正向查询：ops.demo 视图（数据来自 scripts/demo/prepare-ducklake-demo.py）
 #   3) 负向测试：读 /etc/passwd 必须被拦（安全配置验收项）
 # ============================================================
 import json

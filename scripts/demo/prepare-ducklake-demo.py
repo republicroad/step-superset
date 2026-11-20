@@ -2,7 +2,7 @@
 # 重建 DuckDB 演示数据（容器内运行，写 /data/duckdb）
 #
 # 用法（在仓库根目录，Git Bash / 任何 shell）：
-#   podman exec -i superset_app python - < scripts/prepare-ducklake-demo.py
+#   podman exec -i step-superset-app python - < scripts/demo/prepare-ducklake-demo.py
 #
 # 产出（全部可由本脚本重建，git 不追踪二进制）：
 #   /data/duckdb/main.duckdb        主库：ops.demo 视图（指向 parquet 文件）

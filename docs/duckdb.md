@@ -29,7 +29,7 @@ Superset 的 `analytics_db_safety` 模块默认拦截 duckdb / sqlite / shillela
 
 | 形态 | URI | 适用 |
 |---|---|---|
-| 持久数据库 | `duckdb:////data/duckdb/main.duckdb` | 持久视图/表（本仓库默认，数据来自 `scripts/prepare-ducklake-demo.py`） |
+| 持久数据库 | `duckdb:////data/duckdb/main.duckdb` | 持久视图/表（本仓库默认，数据来自 `scripts/demo/prepare-ducklake-demo.py`） |
 | 内存库 | `duckdb:///:memory:` | 每个连接独立内存实例，只适合无状态演示 |
 | 直读文件 | 虚拟数据集 SQL `SELECT * FROM '/data/duckdb/data/*.parquet'` | 本地文件；远程对象存储需先加载 httpfs |
 
@@ -172,7 +172,7 @@ duckdb-engine 没有 post-connect 初始化钩子，直接塞 connect_args 会�
 链路贯通的证明）；白名单外对象实测被
 `file system operations are disabled` 拦截。本地基线（第 4 节）同步全量验证：
 本地白名单内查询成功、`/etc/passwd` 与名单外 ATTACH 被拦。
-四用例验收脚本：`scripts/verify-duckdb-chain.py`。
+四用例验收脚本：`scripts/verify/verify-duckdb-chain.py`。
 真实凭据读取也已实测：`read_json('s3://trackdata/track/.../*.log.gz')` 经 Superset
 查询管道返回真实事件数据（10 行 × 32 列，含嵌套 STRUCT）。
 

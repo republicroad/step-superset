@@ -4,7 +4,7 @@
 # 前置：备份 JSON 已放入容器 /tmp/backup_saved_queries.json
 #   （宿主机：podman cp backup/saved_queries_20261120.json step-superset-app:/tmp/）
 # 用法（仓库根目录）：
-#   podman exec -i step-superset-app python - < scripts/restore-saved-queries-from-backup.py
+#   podman exec -i step-superset-app python - < scripts/setup/restore-saved-queries-from-backup.py
 #
 # 逻辑：
 #   1) 读取备份 JSON（GET /saved_query/{id} 的 result 形态）

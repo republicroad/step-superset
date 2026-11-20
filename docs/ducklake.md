@@ -29,7 +29,7 @@ DuckDB 通过 `INSTALL ducklake; LOAD ducklake;` 加载扩展后 `ATTACH` 一个
 
 ## 3. 落地路径 A：parquet 视图（本仓库默认，推荐起步）
 
-`scripts/prepare-ducklake-demo.py` 产出的 `ops.demo` 视图就是这条路的样板：
+`scripts/demo/prepare-ducklake-demo.py` 产出的 `ops.demo` 视图就是这条路的样板：
 
 ```sql
 CREATE VIEW ops.demo AS SELECT * FROM '/data/duckdb/data/*.parquet';
@@ -62,7 +62,7 @@ SELECT * FROM quack_query('quack:<host>', 'SELECT ... FROM lake.ops.demo', token
 - DuckLake 的全部湖仓语义（事务/快照/时间旅行）由服务端原生提供
 - `quack_query` 是表函数，写在虚拟数据集 SQL 里即可，不依赖任何初始化钩子
 
-服务端部署参考 `scripts/quack_server.py`（把 ATTACH ducklake 语句加在 quack_serve 之前即可）。
+服务端部署参考 `scripts/demo/quack_server.py`（把 ATTACH ducklake 语句加在 quack_serve 之前即可）。
 
 ## 5. 本仓库演示物
 
@@ -72,7 +72,7 @@ SELECT * FROM quack_query('quack:<host>', 'SELECT ... FROM lake.ops.demo', token
 | `/data/duckdb/data/part*.parquet` | 两个演示分区文件 | 路径 A 的数据 |
 | `/data/duckdb/catalog.db` | DuckLake catalog（内含 `lake.ops.demo` 表） | DuckDB CLI 侧 ATTACH 流程演示 |
 
-全部由 `scripts/prepare-ducklake-demo.py` 重建，git 不追踪二进制。
+全部由 `scripts/demo/prepare-ducklake-demo.py` 重建，git 不追踪二进制。
 
 ## 6. 边界与失效场景
 

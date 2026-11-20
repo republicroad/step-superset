@@ -3,13 +3,13 @@
 #
 # 前置：
 #   1) .env 已填 ADMIN_PASSWORD
-#   2) 已运行 scripts/prepare-ducklake-demo.py 重建演示数据
+#   2) 已运行 scripts/demo/prepare-ducklake-demo.py 重建演示数据
 #   3) （S3 用例）.env 已启用 DUCKDB_S3_ENABLED=true + DUCKDB_S3_*
 #      凭据可为假值——验收口径是「假凭证请求真实打到存储端，
 #      收到 403/404 类 HTTP 错误」即证明闸门/TLS/凭证链路全通
 #
 # 用法（仓库根目录）：
-#   podman exec -i step-superset-app python - < scripts/verify-duckdb-chain.py
+#   podman exec -i step-superset-app python - < scripts/verify/verify-duckdb-chain.py
 # ============================================================
 import json
 import os
@@ -61,7 +61,7 @@ dbs = s.get(f"{BASE}/api/v1/database/", headers={"Authorization": f"Bearer {toke
             params={"q": "(page_size:100)"}, timeout=30).json()["result"]
 duck = [d for d in dbs if "DuckDB" in d["database_name"]]
 if not duck:
-    print("未找到 DuckDB 连接——先运行 scripts/verify-duckdb.py 创建")
+    print("未找到 DuckDB 连接——先运行 scripts/verify/verify-duckdb.py 创建")
     sys.exit(1)
 db_id = duck[0]["id"]
 print("连接:", duck[0]["database_name"], "id:", db_id)

@@ -11,7 +11,7 @@
 # 占位符解析顺序：CONNECTION_OVERRIDES > /app/.env > os.environ
 # 特殊处理：odps:// 连接串的用户/密码段自动 URL 编码（AK 含 / + = 时无需手工转码）
 # 用法（仓库根目录）：
-#   podman exec -i step-superset-app python - < scripts/create-database-connection.py
+#   podman exec -i step-superset-app python - < scripts/setup/create-database-connection.py
 # ============================================================
 import json
 import os

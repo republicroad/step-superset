@@ -2,13 +2,13 @@
 # ============================================================
 # 拉取 apache/superset 镜像：显式国内镜像源 + 三级回退 + 本地补 tag
 #
-# 用法：./scripts/pull-image.sh [TAG]      默认 TAG=7.0.0rc2
+# 用法：./scripts/pull-image.sh [TAG]      默认 TAG=7.0.0rc3
 # 作用：Docker Hub 大层直拉易断流（重连不支持 Range 续传），
 #       显式走镜像源更稳；拉完补 tag 供 compose 引用
 # ============================================================
 set -u
 
-TAG="${1:-7.0.0rc2}"
+TAG="${1:-7.0.0rc3}"
 TARGET="docker.io/apache/superset:${TAG}"
 PULLED=""
 

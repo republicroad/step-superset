@@ -70,7 +70,7 @@ DATETIME 字段正常返回与序列化，未复现历史问题。若在新版�
 # 1) 在 UI 配好 odps:// 数据源后，仓库根目录 cp .env.example .env
 #    填入 SUPERSET_ADMIN_PASSWORD
 # 2) 运行（冒烟查询默认 select 1，可用环境变量 VERIFY_SQL 覆盖）
-VERIFY_SQL="select 1" podman exec -i step-superset-app python - < scripts/verify-maxcompute.py
+VERIFY_SQL="select 1" podman exec -i step-superset-app python - < scripts/verify/verify-maxcompute.py
 ```
 
 脚本走 Superset 查询管道全链路（do_connect + 结果获取），成功即证明连接、方言、

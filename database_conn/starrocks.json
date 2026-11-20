@@ -1,0 +1,5 @@
+{
+  "database_name": "StarRocks <name>",
+  "sqlalchemy_uri": "starrocks://<DB_USER>:<DB_PASSWORD>@<DB_HOST>:9030/internal.<DB_NAME>",
+  "configuration_method": "sqlalchemy_form"
+}

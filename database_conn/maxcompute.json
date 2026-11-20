@@ -1,0 +1,5 @@
+{
+  "database_name": "ODPS (MaxCompute)",
+  "sqlalchemy_uri": "odps://<MC_AK_ID>:<MC_AK_SECRET>@<MC_PROJECT>/?endpoint=<MC_ENDPOINT>&interactive_mode=true&reuse_odps=true&cache_names=true&cache_seconds=1200",
+  "configuration_method": "sqlalchemy_form"
+}

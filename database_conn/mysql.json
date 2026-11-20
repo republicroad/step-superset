@@ -1,0 +1,5 @@
+{
+  "database_name": "MySQL <name>",
+  "sqlalchemy_uri": "mysql+pymysql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>:3306/<DB_NAME>?charset=utf8mb4",
+  "configuration_method": "sqlalchemy_form"
+}

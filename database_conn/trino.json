@@ -1,0 +1,5 @@
+{
+  "database_name": "Trino <name>",
+  "sqlalchemy_uri": "trino://<TRINO_USER>@<TRINO_HOST>:8080/<CATALOG>",
+  "configuration_method": "sqlalchemy_form"
+}

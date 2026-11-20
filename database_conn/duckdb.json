@@ -1,0 +1,5 @@
+{
+  "database_name": "DuckDB <name>",
+  "sqlalchemy_uri": "duckdb:////data/duckdb/main.duckdb",
+  "configuration_method": "sqlalchemy_form"
+}

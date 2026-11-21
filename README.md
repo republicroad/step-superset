@@ -80,7 +80,7 @@ patch/enable_duckdb.py  duckdb 方言黑名单补丁（仅测试/内网环境）
 .env.example            数据源凭据模板（真实凭据放 .env，永不提交）
 database_conn/          数据源连接模板（pg/mysql/duckdb/maxcompute/doris/starrocks/trino）
 scripts/                pull-image.sh（拉镜像）；verify/（三数据源端到端验收）；setup/（连接创建与数据集固化）；demo/（DuckLake 演示数据与 Quack 客户端）
-docs/                   四数据源 + troubleshooting 详述（中文，内容自包含）
+docs/                   四数据源 + MCP + troubleshooting 详述（中文，内容自包含）
 ```
 
 ## 🔒 安全边界

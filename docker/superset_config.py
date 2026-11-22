@@ -49,3 +49,32 @@ if _patches_on:
     import engine_patches  # noqa: E402  与本文件同在 /app/pythonpath
 
     engine_patches.apply(_env_local)
+
+# ------------------------------------------------------------
+# MCP 服务（docs/mcp.md；compose 内 superset_mcp 常驻服务）
+#
+# 两种模式互斥配置，均由 .env 注入，键值不入仓库：
+#   开发模式（仅本机）：MCP_DEV_MODE=true 且 MCP_DEV_USERNAME 存在时，
+#     未认证的工具调用一律以该用户身份执行；该用户必须已存在于 Superset。
+#     公网部署必须关闭（红线），改用下方 JWT。
+#   生产模式：MCP_AUTH_ENABLED=true，JWT/JWKS 校验，sub 解析为 Superset
+#     用户，RBAC/RLS 随之逐用户生效；scope 经 MCP_REQUIRED_SCOPES 控制。
+# 两者都未配置时 MCP 服务仍可启动，但所有 tools/call 被拒
+# （Authentication required——MCP_DEV_USERNAME 漏配即此表现，实测）。
+# ------------------------------------------------------------
+if _env_local.get("MCP_DEV_MODE", "false").lower() == "true" and _env_local.get("MCP_DEV_USERNAME"):
+    MCP_DEV_USERNAME = _env_local["MCP_DEV_USERNAME"]
+
+if _env_local.get("MCP_AUTH_ENABLED", "false").lower() == "true":
+    MCP_AUTH_ENABLED = True
+    MCP_JWT_ALGORITHM = _env_local.get("MCP_JWT_ALGORITHM", "RS256")
+    if _env_local.get("MCP_JWT_SECRET"):        # HS256 共享密钥，严禁写进仓库
+        MCP_JWT_SECRET = _env_local["MCP_JWT_SECRET"]
+    if _env_local.get("MCP_JWKS_URI"):          # RS256 走 JWKS 对接 OIDC
+        MCP_JWKS_URI = _env_local["MCP_JWKS_URI"]
+    if _env_local.get("MCP_JWT_ISSUER"):
+        MCP_JWT_ISSUER = _env_local["MCP_JWT_ISSUER"]
+    if _env_local.get("MCP_JWT_AUDIENCE"):
+        MCP_JWT_AUDIENCE = _env_local["MCP_JWT_AUDIENCE"]
+    MCP_REQUIRED_SCOPES = [s.strip() for s in
+                           _env_local.get("MCP_REQUIRED_SCOPES", "mcp:read").split(",") if s.strip()]

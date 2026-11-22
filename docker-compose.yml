@@ -1,7 +1,7 @@
 # ============================================================
 # Superset 7.0 数据源实战栈（MaxCompute / DuckDB / DuckLake / Quack）
 #
-# 基线版本：apache/superset:7.0.0rc2（Dockerfile ARG 可切换）
+# 基线版本：apache/superset:7.0.0rc3（Dockerfile ARG 可切换）
 # 启动：podman compose up -d   （或 docker compose up -d）
 # 凭据：数据源凭据放 .env（参考 .env.example），本文件只含
 #       Superset 自身的示例密码（change-me 风格占位，生产务必覆盖）
@@ -56,7 +56,7 @@ services:
       - db_data:/var/lib/postgresql/data
 
   superset_init:
-    image: localhost/superset-mc:${SUPERSET_TAG:-7.0.0rc2}
+    image: localhost/superset-mc:${SUPERSET_TAG:-7.0.0rc3}
     container_name: step-superset-init
     command: ["/app/docker/docker-init.sh"]
     user: root
@@ -71,7 +71,7 @@ services:
       - ./docker:/app/pythonpath
 
   superset_app:
-    image: localhost/superset-mc:${SUPERSET_TAG:-7.0.0rc2}
+    image: localhost/superset-mc:${SUPERSET_TAG:-7.0.0rc3}
     container_name: step-superset-app
     command: ["/app/docker/docker-bootstrap.sh", "app-gunicorn"]
     user: root
@@ -90,6 +90,29 @@ services:
       - ./.env:/app/.env:ro
       # 连接模板目录（scripts/create-database-connection.py 读取）
       - ./database_conn:/app/database_conn:ro
+
+  # MCP 服务（docs/mcp.md）：与 web 共享元数据库与 superset_config.py，
+  # engine_patches（DuckDB 三层闸门 + odps 方言补丁）对 MCP 进程同样生效。
+  # 权限模式由 .env 决定：MCP_DEV_MODE=true 走 dev 用户（仅本机），
+  # MCP_AUTH_ENABLED=true 走 JWT（公网红线）。
+  superset_mcp:
+    image: localhost/superset-mc:${SUPERSET_TAG:-7.0.0rc3}
+    container_name: step-superset-mcp
+    command: ["superset", "mcp", "run", "--host", "0.0.0.0", "--port", "5008"]
+    user: root
+    environment: *superset-env
+    restart: unless-stopped
+    ports:
+      # 仅限本机/内网。公网部署删除此映射：mcp 进程改为绑 127.0.0.1，
+      # 经反向代理 TLS 收口（docs/mcp.md 4.3）
+      - "5008:5008"
+    depends_on:
+      superset_init:
+        condition: service_completed_successfully
+    volumes:
+      - superset_home:/app/superset_home
+      - ./docker:/app/pythonpath
+      - ./.env:/app/.env:ro
 
 volumes:
   superset_home:

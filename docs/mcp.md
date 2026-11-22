@@ -33,6 +33,13 @@ AI 客户端 ──MCP(HTTP+JSON-RPC)──> MCP Server(:5008/mcp) ──共享�
 
 ## 2. 工具目录
 
+> **rc3 运行时实测（2026-11-21）**：`tools/list` 只暴露 4 个入口工具
+> （`get_instance_info` / `health_check` / `search_tools` / `call_tool`）。
+> 66 个业务工具经 `search_tools`（省略 query = 全量列表）检索，经
+> `call_tool(name, arguments={request: {...}})` 调用——业务工具参数统一
+> 走 `request` 包装，与下表平铺口径不同。接入脚本按入口工具实现
+> （`scripts/verify/verify-mcp.py` 已内置两种形态的适配）。
+
 按域分类（官方文档口径，共 18+ 个）：
 
 | 域 | 工具 | 说明 |
@@ -48,6 +55,48 @@ AI 客户端 ──MCP(HTTP+JSON-RPC)──> MCP Server(:5008/mcp) ──共享�
 
 写操作（mutate 类工具）委托给 Superset 现有 chart 命令，不绕过图表编辑权限；
 外部系统管理的仪表盘拒绝布局/成员/删除类修改（官方文档口径）。
+`execute_sql` 原生拦截 DML：连接 `allow_dml` 不开时直接报
+`DML queries are not allowed on this database`（实测）——工具层只读白名单免费获得，
+与数据层 AK 最小权限构成双兜底。
+
+### 2.1 rc3 运行时实测清单（66 个业务工具，2026-11-21）
+
+`search_tools` 全量检索结果（你栈内 7.0.0rc3 实例实测），比官方文档口径多得多——
+报表、RLS、角色、主题、注释层全部工具化。✍️ = mutate 类写操作（对应 `mcp:write` scope），
+其余为只读；**数据库连接只有 list/get，无 create/update/delete**——连接管理不可经
+MCP，权限红线（专用账号不给连接管理权限）因此天然成立。
+
+| 域 | 工具 | 数 |
+|---|---|---|
+| 注释层 | `list_annotation_layers` / `get_annotation_layer_info` / `list_layer_annotations` / `get_layer_annotation_info` | 4 |
+| 图表 | `list_charts` / `get_chart_info` / `get_chart_data` / `get_chart_preview` / `get_chart_sql` / `get_chart_type_schema` / `generate_chart` ✍️ / `update_chart` ✍️ / `update_chart_preview` / `delete_chart` ✍️ / `restore_chart` ✍️ | 11 |
+| 仪表盘 | `list_dashboards` / `get_dashboard_info` / `get_dashboard_layout` / `get_dashboard_datasets` / `generate_dashboard` ✍️ / `update_dashboard` ✍️ / `add_chart_to_existing_dashboard` ✍️ / `remove_chart_from_dashboard` ✍️ / `manage_native_filters` ✍️ / `manage_dashboard_owners` ✍️ / `manage_dashboard_roles` ✍️ / `manage_dashboard_certification` ✍️ / `duplicate_dashboard` ✍️ / `delete_dashboard` ✍️ / `restore_dashboard` ✍️ | 15 |
+| 数据库连接 | `list_databases` / `get_database_info`（只读，无写工具） | 2 |
+| 数据集 | `list_datasets` / `get_dataset_info` / `query_dataset` / `create_dataset` ✍️ / `create_virtual_dataset` ✍️ / `update_dataset_metric` ✍️ | 6 |
+| SQL / 查询 | `execute_sql` / `open_sql_lab_with_context` / `save_sql_query` ✍️ / `generate_explore_link` | 4 |
+| 查询记录 | `list_queries` / `get_query_info` | 2 |
+| 报表 | `list_reports` / `get_report_info` | 2 |
+| RLS 行级规则 | `list_rls_filters` / `get_rls_filter_info` | 2 |
+| 角色 | `list_roles` / `get_role_info` | 2 |
+| 保存查询 | `list_saved_queries` / `get_saved_query_info` | 2 |
+| 语义辅助 | `get_table` / `get_schema` / `list_metrics` / `get_compatible_dimensions` / `get_compatible_metrics`（AI 建图选列/选指标） | 5 |
+| 标签 | `list_tags` / `get_tag_info` | 2 |
+| 主题 | `list_themes` / `get_theme_info` / `create_theme` ✍️ | 3 |
+| 用户 | `find_users` / `list_users` / `get_user_info` | 3 |
+| 辅助 | `generate_bug_report` | 1 |
+
+RLS / 角色工具的口径提醒：`list_rls_filters` / `list_roles` 只读可见性受调用者
+权限约束——生产模式下专用账号只看到自己权限集内的对象，与 web UI 一致（RBAC 同源）。
+
+**建图闭环实测（2026-11-21，PG 数据源）**：`create_virtual_dataset →
+generate_chart → generate_dashboard → list_dashboards 验证 → 清理` 全链路跑通
+（脚本 `scripts/demo/mcp_pg_close_loop.py`，含完整清理）。关键坑：
+`generate_chart` **默认是预览态**——`success:true` 但 `chart:null`，只回
+`form_data_key`（未存图表状态，可用 `get_chart_data` 按 key 取数）；要落库必须
+显式 `save_chart: true` + `chart_name`，返回体里才有 `chart.id`。
+`generate_dashboard` 必填仅 `chart_ids[]`，`slug` 可选（设了即得
+`/dashboard/<slug>/` 直达链接）。另注意：MCP 无连接/数据集删除工具——连接经
+REST 建，数据集清理走 `DELETE /api/v1/dataset/{id}`。
 
 ## 3. 开发模式启用（仅限本机）
 
@@ -75,7 +124,7 @@ MCP_DEV_USERNAME = "admin"
 podman exec -d step-superset-app superset mcp run --host 0.0.0.0 --port 5008
 ```
 
-长期使用建议做成 compose 常驻服务（command 覆盖为 mcp run），而非 `exec -d`。
+本仓库 compose 已内置 `superset_mcp` 常驻服务（见 3.4），无需 `exec -d`。
 
 ### 3.2 客户端接入
 
@@ -118,6 +167,34 @@ Claude Desktop（配置文件位于 `%APPDATA%\Claude\claude_desktop_config.json
 
 同名陷阱：网络上另有 `superset.sh`（agent 工作平台，MCP 端点 `api.superset.sh/mcp`），
 与 Apache Superset 无关，配置时勿混用。
+
+### 3.4 本仓库已内置：常驻服务 + 配置开关 + 验收脚本
+
+compose 内新增 `superset_mcp` 服务（`superset mcp run --host 0.0.0.0 --port 5008`），
+与 web 共享元数据库与 superset_config.py，`engine_patches` 对 MCP 进程同样生效。
+权限模式全部由 `.env` 注入（键值不入仓库）：
+
+| 键 | 模式 | 行为 |
+|---|---|---|
+| `MCP_DEV_MODE=true` + `MCP_DEV_USERNAME=<用户>` | 开发（仅本机） | 未认证调用一律以该用户执行；公网必须关闭（红线） |
+| `MCP_AUTH_ENABLED=true` + `MCP_JWT_*` / `MCP_REQUIRED_SCOPES` | 生产 | JWT/JWKS 校验，`sub` 解析为 Superset 用户，RBAC/RLS 逐用户生效 |
+| 两者都未配置 | — | 服务可启动但所有 `tools/call` 被拒（Authentication required） |
+
+验收（2026-11-21 实测全部通过；含负向用例：未认证调用按模式预期放行/拒绝；
+odps 连接上 INSERT 必须被拒——实测 `execute_sql` 原生拦截 DML，与 AK 只授
+Select/Download 构成工具层+数据层双兜底）：
+
+```bash
+podman exec -i step-superset-app python - < scripts/verify/verify-mcp.py
+```
+
+资源权限设计口径（三层漏斗，任何一层失效其余兜底）：
+
+```text
+身份层：JWT（RS256+JWKS）→ sub → Superset 用户；scope 区分 mcp:read / mcp:write
+工具层：专用账号不给连接管理权限（红线）；mutate 类工具仅 mcp:write 可调
+数据层：Superset RBAC/RLS（行级）+ MaxCompute AK 只授 Select/Download（兜底）
+```
 
 ## 4. 公网上线要求
 
